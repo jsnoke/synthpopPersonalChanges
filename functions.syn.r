@@ -753,20 +753,23 @@ syn.cartbboot <- function(y, x, xp, proper = FALSE,
 ###-----syn.nested---------------------------------------------------------
 # function for allocating to subcategories (random sampling within groups)
 
-syn.nested <- function (y, x, xp, ...)
+syn.nested <- function (y, x, xp, nestVar, nestVarP, ...)
 {
-  xr   <- apply(x, 1, function(x) paste(x,collapse="-"))
-  xpr  <- apply(xp, 1, function(x) paste(x,collapse="-"))
+  xr   <- apply(nestVar, 1, function(x) paste(x,collapse="-"))
+  xpr  <- apply(nestVarP, 1, function(x) paste(x,collapse="-"))
   uxpr <- sort(unique(xpr))
   
-  index  <- 1:length(y)
-  indexp <- rep(0, nrow(xp))
+  indexp = factor(rep(NA, nrow(nestVar)), levels = levels(y))
   for (i in uxpr) {
-    indexp[xpr == i] <- sample(index[xr == i], sum(xpr == i), TRUE)
+    if(nlevels(droplevels(y[xr == i])) <= 1){
+      indexp[xpr == i] = y[xr == i]
+    } else{
+      indexp[xpr == i] = syn.cart(y = y[xr == i], x = x[xr == i, ], xp = xp[xpr == i, ], smoothing = smoothing)$res 
+    }
+    
   }
-  yp <- y[indexp]
  
-  return(list(res = yp, fit = "nested"))
+  return(list(res = indexp, fit = "nested"))
 }
 
 

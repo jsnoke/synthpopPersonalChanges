@@ -137,6 +137,11 @@ sampler.syn <- function(p, data, m, syn, visit.sequence,
                 proper=proper, ...))
               p$syn[ypa, j] <- synfun$res
               if (models) fits[[i]][[j]] <- synfun$fit           
+            } else if(grepl("nested", theMethod)){
+              nestVar = p$data[ya, p$nestVar[j, ] == 1, drop = FALSE]
+              nestVarP = p$syn[ypa, p$nestVar[j, ] == 1, drop = FALSE]
+              synfun = do.call(f, args = c(list(y=y, x=x, xp=xp, nestVar = nestVar, nestVarP = nestVarP,
+                smoothing=p$smoothing[j], proper=proper), fun.args))
             } else {
               synfun <- do.call(f, args = c(list(y=y, x=x, xp=xp,
                 smoothing=p$smoothing[j], proper=proper), fun.args))

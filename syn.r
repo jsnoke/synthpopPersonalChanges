@@ -212,6 +212,7 @@ check.method.syn <- function(setup, data, proper) {
  pred		        <- setup$predictor.matrix
  event          <- setup$event
  denom          <- setup$denom                    #GRdenom new
+ nestVar = NULL
 
  # check if var has predictors
  if (sum(pred) > 0) has.pred <- apply(pred != 0, 1, any)   # GR condition added
@@ -271,9 +272,14 @@ check.method.syn <- function(setup, data, proper) {
        "is not nested within its predictor", gr.vars[i], ". Check categories:", 
        paste0(rownames(tabvars01)[ymulti],collapse=", "), "\n" ,sep=" ")
    
+   # get nested predictor
+   nestVar = pred
+   nestVar[i, -match(gr.vars[i],varnames)] = 0
+   nestVar[-match(varnames[i],gr.vars), i] = 0
+
    # adjust predictor matrix
-   pred[i, -match(gr.vars[i],varnames)] <- 0  # remove all predictors except the group var
-   pred[-match(varnames[i],gr.vars), i] <- 0  # exclude detailed var from predictors except when used for nested method
+   pred[i, match(gr.vars[i],varnames)] <- 0  # remove all predictors except the group var
+   pred[match(varnames[i],gr.vars), i] <- 0  # exclude detailed var from predictors except when used for nested method
    }
    if (m > 0) method[nestmth.idx] <- "nested"
  }
@@ -474,6 +480,7 @@ check.method.syn <- function(setup, data, proper) {
  setup$predictor.matrix <- pred
  setup$visit.sequence   <- vis
  setup$denom            <- denom                  #GRdenom new
+ setup$nestVar = nestVar
  
  return(setup)
 }
@@ -828,6 +835,7 @@ check.rules.syn <- function(setup, data) {
  cont.na          <- setup$cont.na
  default.method   <- setup$default.method
  denom            <- setup$denom                       #GRdenom new
+ nestVar = setup$nestVar
 
  # Not used variables are identified and dropped if drop.not.used==T
  # reclculate inpred & notevent in case they have changed after
@@ -916,14 +924,29 @@ check.rules.syn <- function(setup, data) {
                                                      #  GR condition added
  if (sum(predictor.matrix) > 0) {
 	 
-   pm <- padMis.syn(data, method, predictor.matrix, visit.sequence,
+   pmPred <- padMis.syn(data, method, predictor.matrix, visit.sequence,
 			   nvar, rules, rvalues, default.method, cont.na, smoothing, event, denom)
+   pmNest <- padMis.syn(data, method, nestVar, visit.sequence,
+         nvar, rules, rvalues, default.method, cont.na, smoothing, event, denom)
 
 	 # Pad the Syhthesis model with dummy variables for the factors
 	 # p <- padModel.syn(data, method, predictor.matrix, visit.sequence,
 	 #                   nvar, rules, rvalues)
-	 p  <- padModel.syn(pm$data, pm$method, pm$predictor.matrix, pm$visit.sequence,
-			   pm$nvar, pm$rules, pm$rvalues, pm$factorNA, pm$smoothing, pm$event, pm$denom)
+	 pPred  <- padModel.syn(pmPred$data, pmPred$method, pmPred$predictor.matrix, pmPred$visit.sequence,
+			   pmPred$nvar, pmPred$rules, pmPred$rvalues, pmPred$factorNA, pmPred$smoothing, pmPred$event, pmPred$denom)
+   pNest  <- padModel.syn(pmNest$data, pmNest$method, pmNest$predictor.matrix, pmNest$visit.sequence,
+         pmNest$nvar, pmNest$rules, pmNest$rvalues, pmNest$factorNA, pmNest$smoothing, pmNest$event, pmNest$denom)
+   p = list(data = as.data.frame(pmPred$data), syn = as.data.frame(pmPred$data),
+              predictor.matrix = pmPred$predictor.matrix,
+              nestVar = pmNest$predictor.matrix, 
+              method = pmPred$method, 
+              visit.sequence = pmPred$visit.sequence, 
+              rules = pmPred$rules,
+              rvalues = pmPred$rvalues, 
+              categories = pmPred$categories,
+              smoothing = pmPred$smoothing,
+              event=pmPred$event,
+              denom=pmPred$denom)
    if (k != dim(data)[1]){
      # create a non-empty data frame in case some variables are kept unsynthesised
      p$syn <- p$syn[sample(1:nrow(data),k,replace=TRUE),]
@@ -944,6 +967,7 @@ check.rules.syn <- function(setup, data) {
               cont.na = cont.na, 
               event = event,                  #GRdenom new
               denom = denom,                  #GRdenom new
+              nestVar = nestVar,
               categories = NULL,
               smoothing = smoothing)         
  }
