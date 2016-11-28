@@ -926,17 +926,15 @@ check.rules.syn <- function(setup, data) {
 	 
    pmPred <- padMis.syn(data, method, predictor.matrix, visit.sequence,
 			   nvar, rules, rvalues, default.method, cont.na, smoothing, event, denom)
-   pmNest <- padMis.syn(data, method, nestVar, visit.sequence,
-         nvar, rules, rvalues, default.method, cont.na, smoothing, event, denom)
+   pPred  <- padModel.syn(pmPred$data, pmPred$method, pmPred$predictor.matrix, pmPred$visit.sequence,
+         pmPred$nvar, pmPred$rules, pmPred$rvalues, pmPred$factorNA, pmPred$smoothing, pmPred$event, pmPred$denom)
 
-	 # Pad the Syhthesis model with dummy variables for the factors
-	 # p <- padModel.syn(data, method, predictor.matrix, visit.sequence,
-	 #                   nvar, rules, rvalues)
-	 pPred  <- padModel.syn(pmPred$data, pmPred$method, pmPred$predictor.matrix, pmPred$visit.sequence,
-			   pmPred$nvar, pmPred$rules, pmPred$rvalues, pmPred$factorNA, pmPred$smoothing, pmPred$event, pmPred$denom)
-   pNest  <- padModel.syn(pmNest$data, pmNest$method, pmNest$predictor.matrix, pmNest$visit.sequence,
+   if(sum(grepl("nested", method)) > 0){
+    pmNest <- padMis.syn(data, method, nestVar, visit.sequence,
+         nvar, rules, rvalues, default.method, cont.na, smoothing, event, denom)
+    pNest  <- padModel.syn(pmNest$data, pmNest$method, pmNest$predictor.matrix, pmNest$visit.sequence,
          pmNest$nvar, pmNest$rules, pmNest$rvalues, pmNest$factorNA, pmNest$smoothing, pmNest$event, pmNest$denom)
-   p = list(data = as.data.frame(pmPred$data), syn = as.data.frame(pmPred$data),
+    p = list(data = as.data.frame(pmPred$data), syn = as.data.frame(pmPred$data),
               predictor.matrix = pmPred$predictor.matrix,
               nestVar = pmNest$predictor.matrix, 
               method = pmPred$method, 
@@ -947,6 +945,24 @@ check.rules.syn <- function(setup, data) {
               smoothing = pmPred$smoothing,
               event=pmPred$event,
               denom=pmPred$denom)
+   } else{
+    p = list(data = as.data.frame(pmPred$data), syn = as.data.frame(pmPred$data),
+              predictor.matrix = pmPred$predictor.matrix,
+              method = pmPred$method, 
+              visit.sequence = pmPred$visit.sequence, 
+              rules = pmPred$rules,
+              rvalues = pmPred$rvalues, 
+              categories = pmPred$categories,
+              smoothing = pmPred$smoothing,
+              event=pmPred$event,
+              denom=pmPred$denom)
+   }
+   
+
+	 # Pad the Syhthesis model with dummy variables for the factors
+	 # p <- padModel.syn(data, method, predictor.matrix, visit.sequence,
+	 #                   nvar, rules, rvalues)
+	  
    if (k != dim(data)[1]){
      # create a non-empty data frame in case some variables are kept unsynthesised
      p$syn <- p$syn[sample(1:nrow(data),k,replace=TRUE),]

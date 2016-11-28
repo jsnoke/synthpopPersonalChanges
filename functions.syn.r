@@ -761,10 +761,20 @@ syn.nested <- function (y, x, xp, nestVar, nestVarP, ...)
   
   indexp = factor(rep(NA, nrow(nestVar)), levels = levels(y))
   for (i in uxpr) {
+    oldIndices = 
+
     if(nlevels(droplevels(y[xr == i])) <= 1){
       indexp[xpr == i] = y[xr == i]
     } else{
-      indexp[xpr == i] = syn.cart(y = y[xr == i], x = x[xr == i, ], xp = xp[xpr == i, ], smoothing = smoothing)$res 
+      #indexp[xpr == i] = syn.cart(y = y[xr == i], x = x[xr == i, ], xp = xp[xpr == i, ], smoothing = smoothing)$res 
+      tempData = as.data.frame(cbind(y, x))[xr == i, ]
+      fit   <- rpart(y ~ ., data = tempData, method = "class",
+                   minbucket = 5, cp = 1e-04)
+      nodes <- predict(object = fit, newdata = xp[xpr == i, ], type = "class")
+      #new   <- apply(nodes, MARGIN=1, FUN=function(s) resample(colnames(nodes),size=1,prob=s))
+      #new   <- factor(new,levels=levels(droplevels(y[]))) 
+      new = factor(nodes, levels = levels(indexp))
+      indexp[xpr == i] = nodes
     }
     
   }
